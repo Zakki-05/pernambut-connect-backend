@@ -110,6 +110,7 @@ class MosqueViewSet(viewsets.ModelViewSet):
         return Response({"error": "No mosques found"}, status=status.HTTP_404_NOT_FOUND)
 
 class AnnouncementViewSet(viewsets.ModelViewSet):
+    queryset = Announcement.objects.all()
     serializer_class = AnnouncementSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -120,6 +121,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         return Announcement.objects.none()
 
 class EventViewSet(viewsets.ModelViewSet):
+    queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -130,6 +132,7 @@ class EventViewSet(viewsets.ModelViewSet):
         return Event.objects.none()
 
 class CommunityUpdateViewSet(viewsets.ModelViewSet):
+    queryset = CommunityUpdate.objects.all()
     serializer_class = CommunityUpdateSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 

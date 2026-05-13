@@ -84,7 +84,7 @@ class CommunityUpdate(models.Model):
     title = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     content = models.TextField()
-    image = models.ImageField(upload_to='community_updates/', null=True, blank=True)
+    image = models.FileField(upload_to='community_updates/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
