@@ -2,12 +2,12 @@ from django.core.management.base import BaseCommand
 from api.models import User
 
 class Command(BaseCommand):
-    help = 'Remove specific user by phone number'
+    help = 'Remove specific user by email'
 
     def handle(self, *args, **kwargs):
-        phone = '9342954510'
-        deleted_count, _ = User.objects.filter(phone_number=phone).delete()
+        email = 'test@example.com'
+        deleted_count, _ = User.objects.filter(email=email).delete()
         if deleted_count:
-            self.stdout.write(self.style.SUCCESS(f'Successfully deleted user with phone {phone}'))
+            self.stdout.write(self.style.SUCCESS(f'Successfully deleted user with email {email}'))
         else:
-            self.stdout.write(self.style.WARNING(f'No user found with phone {phone}'))
+            self.stdout.write(self.style.WARNING(f'No user found with email {email}'))

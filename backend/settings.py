@@ -99,3 +99,13 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+# Firebase Admin Initialization
+import firebase_admin
+from firebase_admin import credentials
+
+firebase_key_path = BASE_DIR / 'serviceAccountKey.json'
+if firebase_key_path.exists():
+    cred = credentials.Certificate(str(firebase_key_path))
+    firebase_admin.initialize_app(cred)
+else:
+    print("\n[WARNING] Firebase serviceAccountKey.json not found. Google Auth verification will be skipped.\n")

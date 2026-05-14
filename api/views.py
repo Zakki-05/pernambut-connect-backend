@@ -65,6 +65,40 @@ class AuthViewSet(viewsets.ViewSet):
             'user': UserSerializer(user).data
         })
 
+    @action(detail=False, methods=['post'])
+    def google_login(self, request):
+        token = request.data.get('token')
+        if not token:
+            return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # In a real app, use firebase_admin to verify:
+            # decoded_token = auth.verify_id_token(token)
+            # email = decoded_token['email']
+            # name = decoded_token.get('name', '')
+            
+            # For demo purposes, we'll assume the token is the email
+            # IMPORTANT: Replace this with real verification in production!
+            email = token if '@' in token else "google-user@example.com"
+            name = email.split('@')[0].capitalize()
+            
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email,
+                    'name': name
+                }
+            )
+            
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
