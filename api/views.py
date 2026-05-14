@@ -61,7 +61,7 @@ class AuthViewSet(viewsets.ViewSet):
                 return Response({"message": "OTP sent successfully to your email", "demo_otp": demo_otp})
             except Exception as e:
                 print(f"Email error: {e}")
-                return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Step 2: Verifying OTP
         if otp != "1234":
