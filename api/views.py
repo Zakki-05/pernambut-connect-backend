@@ -37,7 +37,7 @@ class AuthViewSet(viewsets.ViewSet):
                 "status": "success"
             })
         
-        if otp != "1234":
+        if str(otp) != "1234":
             return Response({"error": "Invalid OTP. Use 1234 for testing."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
