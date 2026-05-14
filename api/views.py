@@ -44,9 +44,24 @@ class AuthViewSet(viewsets.ViewSet):
         
         # Step 1: Requesting OTP
         if not otp:
-            # Simulate sending OTP
-            print(f"\n[EMAIL GATEWAY] Sending OTP 1234 to {email}\n")
-            return Response({"message": "OTP sent successfully to your email", "demo_otp": "1234"})
+            # Generate a simple OTP (in prod use a random one and save to cache)
+            demo_otp = "1234" 
+            
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            try:
+                send_mail(
+                    'Your Pernambut Connect Login Code',
+                    f'Your login code is: {demo_otp}',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+                return Response({"message": "OTP sent successfully to your email", "demo_otp": demo_otp})
+            except Exception as e:
+                print(f"Email error: {e}")
+                return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Step 2: Verifying OTP
         if otp != "1234":
