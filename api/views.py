@@ -42,7 +42,7 @@ class AuthViewSet(viewsets.ViewSet):
         if not email:
             return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Step 1: Requesting OTP
+        # Step 1: Requesting OTP (or if otp is null/empty)
         if not otp:
             # Generate a simple OTP (in prod use a random one and save to cache)
             demo_otp = "1234" 
@@ -50,6 +50,8 @@ class AuthViewSet(viewsets.ViewSet):
             from django.core.mail import send_mail
             from django.conf import settings
             
+            email_sent = False
+            error_msg = ""
             try:
                 send_mail(
                     'Your Pernambut Connect Login Code',
@@ -58,20 +60,50 @@ class AuthViewSet(viewsets.ViewSet):
                     [email],
                     fail_silently=False,
                 )
-                return Response({"message": "OTP sent successfully to your email", "demo_otp": demo_otp})
+                email_sent = True
             except Exception as e:
                 print(f"Email error: {e}")
-                return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+                error_msg = str(e)
+            
+            if email_sent:
+                return Response({
+                    "message": "OTP sent successfully to your email", 
+                    "demo_otp": demo_otp,
+                    "status": "success"
+                })
+            else:
+                # If email fails, we still allow proceeding in demo mode
+                return Response({
+                    "message": f"Proceeding with demo mode (Email error: {error_msg})",
+                    "demo_otp": demo_otp,
+                    "warning": "Email delivery failed, but you can use the demo OTP.",
+                    "status": "warning"
+                }, status=status.HTTP_200_OK) # Change to 200 to allow frontend to proceed
         
         # Step 2: Verifying OTP
         if otp != "1234":
             return Response({"error": "Invalid OTP. Use 1234 for testing."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Auto-create user for simplicity if doesn't exist
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={'username': email.split('@')[0]}
-        )
+        # Create or get user using email as primary identifier
+        # Use the email itself as username to avoid duplicates if possible, 
+        # or handle username uniqueness
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Create new user
+            username = email.replace('@', '_').replace('.', '_')
+            # Ensure username is unique if someone else has it
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+                
+            user = User.objects.create(
+                email=email,
+                username=username,
+                name=email.split('@')[0].capitalize()
+            )
         
         refresh = RefreshToken.for_user(user)
         return Response({
