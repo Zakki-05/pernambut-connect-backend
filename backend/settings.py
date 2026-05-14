@@ -102,10 +102,20 @@ SIMPLE_JWT = {
 # Firebase Admin Initialization
 import firebase_admin
 from firebase_admin import credentials
+import json
 
 firebase_key_path = BASE_DIR / 'serviceAccountKey.json'
+firebase_env_key = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+
 if firebase_key_path.exists():
     cred = credentials.Certificate(str(firebase_key_path))
     firebase_admin.initialize_app(cred)
+elif firebase_env_key:
+    try:
+        service_account_info = json.loads(firebase_env_key)
+        cred = credentials.Certificate(service_account_info)
+        firebase_admin.initialize_app(cred)
+    except Exception as e:
+        print(f"\n[ERROR] Failed to initialize Firebase from environment: {e}\n")
 else:
-    print("\n[WARNING] Firebase serviceAccountKey.json not found. Google Auth verification will be skipped.\n")
+    print("\n[WARNING] Firebase service account not found (no file and no env var). Google Auth verification will be skipped.\n")

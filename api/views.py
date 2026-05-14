@@ -72,16 +72,28 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # In a real app, use firebase_admin to verify:
-            # decoded_token = auth.verify_id_token(token)
-            # email = decoded_token['email']
-            # name = decoded_token.get('name', '')
+            # Try to use Firebase Admin to verify the token
+            try:
+                from firebase_admin import auth
+                decoded_token = auth.verify_id_token(token)
+                email = decoded_token.get('email')
+                name = decoded_token.get('name', email.split('@')[0])
+            except Exception as firebase_error:
+                # If firebase-admin fails (e.g. no serviceAccountKey.json), 
+                # we fall back to a "demo" mode only if in DEBUG=True
+                from django.conf import settings
+                if settings.DEBUG:
+                    print(f"Firebase verification skipped/failed: {firebase_error}")
+                    # In demo mode, we use the token string as the email if it looks like one
+                    email = token if '@' in token else "demo-user@example.com"
+                    name = email.split('@')[0].capitalize()
+                else:
+                    raise firebase_error
+
+            if not email:
+                return Response({"error": "Invalid token: Email not found"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # For demo purposes, we'll assume the token is the email
-            # IMPORTANT: Replace this with real verification in production!
-            email = token if '@' in token else "google-user@example.com"
-            name = email.split('@')[0].capitalize()
-            
+            # Create or get user
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
@@ -97,7 +109,8 @@ class AuthViewSet(viewsets.ViewSet):
                 'user': UserSerializer(user).data
             })
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            print(f"Google Login Error: {str(e)}")
+            return Response({"error": f"Authentication failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
