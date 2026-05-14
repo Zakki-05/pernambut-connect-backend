@@ -1,9 +1,9 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Mosque, Announcement, Event, CommunityUpdate, Donation, CommunityLink, Bayan
+from .models import User, Mosque, Announcement, Event, CommunityUpdate, Donation, CommunityLink, Bayan
 from .serializers import (
-    MosqueSerializer, AnnouncementSerializer, 
+    UserSerializer, MosqueSerializer, AnnouncementSerializer, 
     EventSerializer, CommunityUpdateSerializer, DonationSerializer, CommunityLinkSerializer, BayanSerializer
 )
 import math
@@ -17,6 +17,71 @@ class CommunityLinkViewSet(viewsets.ModelViewSet):
     queryset = CommunityLink.objects.all()
     serializer_class = CommunityLinkSerializer
     permission_classes = [permissions.AllowAny]
+
+class AuthViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['post'])
+    def login(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        
+        if not email:
+            return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not otp:
+            demo_otp = "1234" 
+            return Response({
+                "message": "OTP sent successfully (Use 1234 for demo)", 
+                "demo_otp": demo_otp,
+                "status": "success"
+            })
+        
+        if otp != "1234":
+            return Response({"error": "Invalid OTP. Use 1234 for testing."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            username = email.replace('@', '_').replace('.', '_')
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+                
+            user = User.objects.create(
+                email=email,
+                username=username,
+                name=email.split('@')[0].capitalize()
+            )
+        
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data
+        })
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return User.objects.filter(id=self.request.user.id)
+
+    @action(detail=False, methods=['put'])
+    def select_mosque(self, request):
+        mosque_id = request.data.get('mosque_id')
+        try:
+            mosque = Mosque.objects.get(id=mosque_id)
+            request.user.selected_mosque = mosque
+            request.user.save()
+            return Response(UserSerializer(request.user).data)
+        except Mosque.DoesNotExist:
+            return Response({"error": "Mosque not found"}, status=status.HTTP_404_NOT_FOUND)
 
 class MosqueViewSet(viewsets.ModelViewSet):
     queryset = Mosque.objects.all()
