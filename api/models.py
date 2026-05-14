@@ -19,17 +19,18 @@ class Mosque(models.Model):
         return self.name
 
 class User(AbstractUser):
-    phone_number = models.CharField(max_length=15, unique=True)
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True)
     area = models.CharField(max_length=100, blank=True)
     selected_mosque = models.ForeignKey(Mosque, on_delete=models.SET_NULL, null=True, blank=True)
 
-    # Use phone_number as the username field
-    USERNAME_FIELD = 'phone_number'
+    # Use email as the username field
+    USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
     def __str__(self):
-        return self.name or self.phone_number
+        return self.name or self.email
 
 class Announcement(models.Model):
     PRIORITY_CHOICES = [

@@ -36,17 +36,17 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def login(self, request):
-        phone_number = request.data.get('phone_number')
+        email = request.data.get('email')
         otp = request.data.get('otp')
         
-        if not phone_number:
-            return Response({"error": "Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not email:
+            return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Step 1: Requesting OTP
         if not otp:
             # Simulate sending OTP
-            print(f"\n[SMS GATEWAY] Sending OTP 1234 to {phone_number}\n")
-            return Response({"message": "OTP sent successfully", "demo_otp": "1234"})
+            print(f"\n[EMAIL GATEWAY] Sending OTP 1234 to {email}\n")
+            return Response({"message": "OTP sent successfully to your email", "demo_otp": "1234"})
         
         # Step 2: Verifying OTP
         if otp != "1234":
@@ -54,8 +54,8 @@ class AuthViewSet(viewsets.ViewSet):
         
         # Auto-create user for simplicity if doesn't exist
         user, created = User.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={'username': phone_number}
+            email=email,
+            defaults={'username': email.split('@')[0]}
         )
         
         refresh = RefreshToken.for_user(user)
