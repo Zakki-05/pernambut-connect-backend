@@ -127,6 +127,10 @@ class AuthViewSet(viewsets.ViewSet):
             print(f"Google Login Error: {str(e)}")
             return Response({"error": f"Authentication failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def ping(self, request):
+        return Response({"message": "pong"})
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
