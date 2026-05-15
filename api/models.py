@@ -134,3 +134,12 @@ class Bayan(models.Model):
 
     def __str__(self):
         return f"{self.speaker} - {self.title}"
+
+class PendingUser(models.Model):
+    email = models.EmailField(unique=True)
+    otp = models.CharField(max_length=6)
+    data = models.JSONField() # Stores name, username, password (hashed)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email

@@ -24,21 +24,113 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate
 from .serializers import RegisterSerializer, LoginSerializer
 
+import random
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
+
 class RegisterAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
+        data = request.data
+        email = data.get('email')
+        
+        # Check if user already exists
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already registered'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate OTP
+        otp = str(random.randint(100000, 999999))
+        
+        # Hash password before storing temporarily
+        hashed_password = make_password(data.get('password'))
+        temp_data = {
+            'username': data.get('username') or email.split('@')[0],
+            'email': email,
+            'password': hashed_password,
+            'name': data.get('name', ''),
+            'otp': otp
+        }
+        
+        # Store in cache for 3 minutes
+        cache.set(f'otp_{email}', temp_data, timeout=180)
+        
+        # Send Email
+        try:
+            send_mail(
+                'Verify your email - Pernambut Connect',
+                f'Your verification code is: {otp}. It expires in 3 minutes.',
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return Response({'error': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'message': 'OTP sent to email. Please verify to complete registration.'}, status=status.HTTP_200_OK)
+
+class VerifyOTPAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        
+        cached_data = cache.get(f'otp_{email}')
+        
+        if not cached_data:
+            return Response({'error': 'OTP expired or not found. Please register again.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if cached_data['otp'] == otp:
+            # Create actual user
+            user = User.objects.create(
+                username=cached_data['username'],
+                email=cached_data['email'],
+                password=cached_data['password'],
+                name=cached_data['name']
+            )
+            
+            # Clear cache
+            cache.delete(f'otp_{email}')
+            
+            # Return tokens
             refresh = RefreshToken.for_user(user)
             return Response({
                 'user': UserSerializer(user).data,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'message': 'Registration successful'
+                'message': 'Email verified and registration complete!'
             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+class ResendOTPAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        cached_data = cache.get(f'otp_{email}')
+        
+        if not cached_data:
+            return Response({'error': 'No pending registration found for this email.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate new OTP
+        new_otp = str(random.randint(100000, 999999))
+        cached_data['otp'] = new_otp
+        cache.set(f'otp_{email}', cached_data, timeout=180)
+        
+        # Resend Email
+        send_mail(
+            'New verification code - Pernambut Connect',
+            f'Your new verification code is: {new_otp}. It expires in 3 minutes.',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response({'message': 'New OTP sent to email.'})
 
 class LoginAPIView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -86,7 +178,34 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        # Admins see all users, regular users see only themselves
+        if self.request.user.is_staff:
+            return User.objects.all().order_by('-date_joined')
         return User.objects.filter(id=self.request.user.id)
+
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'])
+    def toggle_admin(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = self.get_object()
+        # Prevent admin from removing their own status by accident
+        if user.id == request.user.id:
+            return Response({"error": "You cannot change your own admin status"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user.is_staff = not user.is_staff
+        user.is_superuser = user.is_staff # Keep them in sync for simplicity
+        user.save()
+        
+        return Response({
+            "message": f"User {user.email} admin status: {user.is_staff}",
+            "is_staff": user.is_staff
+        })
 
     @action(detail=False, methods=['put'])
     def select_mosque(self, request):
