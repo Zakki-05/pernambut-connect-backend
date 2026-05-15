@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pernambut Connect{% end শাহরুখ %}</title>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Modern Navbar -->
+        <nav class="navbar">
+            <div class="nav-container">
+                <a href="/" class="brand-logo">
+                    <i class="fa-solid fa-mosque icon-gold"></i>
+                    Pernambut Connect
+                </a>
+                
+                <div class="nav-links">
+                    {% if user.is_authenticated %}
+                        <div class="user-dropdown">
+                            <button class="dropdown-toggle">
+                                {% if user.profile_image %}
+                                    <img src="{{ user.profile_image.url }}" alt="Avatar" class="nav-avatar">
+                                {% else %}
+                                    <div class="nav-avatar placeholder-avatar">{{ user.username.0|upper }}</div>
+                                {% endif %}
+                                <span>{{ user.name|default:user.username }}</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="{% url 'accounts:profile' %}"><i class="fa-solid fa-user"></i> Profile</a>
+                                <a href="{% url 'accounts:edit_profile' %}"><i class="fa-solid fa-gear"></i> Settings</a>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'accounts:logout' %}" class="text-danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="nav-link">Login</a>
+                        <a href="{% url 'accounts:signup' %}" class="btn btn-primary nav-btn">Sign Up</a>
+                    {% endif %}
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-btn">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <div class="mobile-nav">
+                {% if user.is_authenticated %}
+                    <div class="mobile-user-info">
+                        {% if user.profile_image %}
+                            <img src="{{ user.profile_image.url }}" alt="Avatar" class="nav-avatar-mobile">
+                        {% else %}
+                            <div class="nav-avatar-mobile placeholder-avatar">{{ user.username.0|upper }}</div>
+                        {% endif %}
+                        <span>{{ user.name|default:user.username }}</span>
+                    </div>
+                    <a href="{% url 'accounts:profile' %}">Profile</a>
+                    <a href="{% url 'accounts:edit_profile' %}">Settings</a>
+                    <a href="{% url 'accounts:logout' %}" class="text-danger">Logout</a>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}">Login</a>
+                    <a href="{% url 'accounts:signup' %}">Sign Up</a>
+                {% endif %}
+            </div>
+        </nav>
+
+        <!-- Alerts/Messages -->
+        <div class="messages-container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade-in">
+                        <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-circle-exclamation{% else %}fa-info-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                        <button class="close-alert">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+        
+        <footer class="footer">
+            <p>&copy; {% now "Y" %} Pernambut Connection. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Alert dismissal
+        document.querySelectorAll('.close-alert').forEach(button => {
+            button.addEventListener('click', () => {
+                const alert = button.parentElement;
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        });
+
+        // Dropdown toggle
+        const dropdownToggle = document.querySelector('.dropdown-toggle');
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+        
+        if (dropdownToggle && dropdownMenu) {
+            dropdownToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('active');
+            });
+
+            document.addEventListener('click', () => {
+                dropdownMenu.classList.remove('active');
+            });
+        }
+
+        // Mobile menu toggle
+        const mobileBtn = document.querySelector('.mobile-menu-btn');
+        const mobileNav = document.querySelector('.mobile-nav');
+        
+        if (mobileBtn && mobileNav) {
+            mobileBtn.addEventListener('click', () => {
+                mobileNav.classList.toggle('active');
+            });
+        }
+        
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        }, 5000);
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Pernambut Connect{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper">
+    <div class="auth-card" style="max-width: 100%;">
+        <div class="profile-header">
+            <div class="profile-avatar-container">
+                {% if user.profile_image %}
+                    <img src="{{ user.profile_image.url }}" alt="{{ user.name }}" class="profile-avatar-large">
+                {% else %}
+                    <div class="profile-avatar-placeholder">
+                        {{ user.username.0|upper }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="profile-info">
+                <h2>{{ user.name|default:user.username }}</h2>
+                <p><i class="fa-solid fa-at text-muted"></i> {{ user.username }}</p>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <div class="info-card">
+                <h3><i class="fa-solid fa-address-card"></i> Personal Information</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">{{ user.name|default:"Not provided" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email Address</span>
+                    <span class="info-value">{{ user.email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone Number</span>
+                    <span class="info-value">{{ user.phone_number|default:"Not provided" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Area/Location</span>
+                    <span class="info-value">{{ user.area|default:"Not provided" }}</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3><i class="fa-solid fa-mosque"></i> Community Details</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Selected Mosque</span>
+                    <span class="info-value">{{ user.selected_mosque.name|default:"Not selected" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Member Since</span>
+                    <span class="info-value">{{ user.date_joined|date:"F j, Y" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Last Login</span>
+                    <span class="info-value">{{ user.last_login|date:"F j, Y, g:i a" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

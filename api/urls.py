@@ -1,12 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
-    AuthViewSet, UserViewSet, MosqueViewSet, AnnouncementViewSet, 
+    RegisterAPIView, LoginAPIView, LogoutAPIView, ProfileAPIView,
+    UserViewSet, MosqueViewSet, AnnouncementViewSet, 
+
     EventViewSet, CommunityUpdateViewSet, DonationViewSet, CommunityLinkViewSet, BayanViewSet
 )
 
 router = DefaultRouter()
-router.register(r'auth', AuthViewSet, basename='auth')
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'mosques', MosqueViewSet, basename='mosque')
 router.register(r'announcements', AnnouncementViewSet, basename='announcement')
@@ -17,5 +19,10 @@ router.register(r'community-links', CommunityLinkViewSet, basename='community-li
 router.register(r'bayans', BayanViewSet, basename='bayan')
 
 urlpatterns = [
+    path('register/', RegisterAPIView.as_view(), name='register'),
+    path('login/', LoginAPIView.as_view(), name='login'),
+    path('logout/', LogoutAPIView.as_view(), name='logout'),
+    path('profile/', ProfileAPIView.as_view(), name='profile'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', include(router.urls)),
 ]
