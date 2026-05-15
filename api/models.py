@@ -24,6 +24,12 @@ class User(AbstractUser):
     name = models.CharField(max_length=255, blank=True)
     area = models.CharField(max_length=100, blank=True)
     selected_mosque = models.ForeignKey(Mosque, on_delete=models.SET_NULL, null=True, blank=True)
+    LANGUAGE_CHOICES = [
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('ur', 'Urdu'),
+    ]
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, default='en')
     profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
     # Use email as the username field

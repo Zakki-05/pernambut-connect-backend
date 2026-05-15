@@ -172,6 +172,18 @@ class ProfileAPIView(APIView):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
+class UpdateLanguageAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        language = request.data.get('language')
+        if language not in ['en', 'ta', 'ur']:
+            return Response({'error': 'Unsupported language'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        request.user.language = language
+        request.user.save()
+        return Response({'message': 'Language updated successfully', 'language': language})
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
