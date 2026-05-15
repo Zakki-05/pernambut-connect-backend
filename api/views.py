@@ -140,7 +140,8 @@ class LoginAPIView(APIView):
         if serializer.is_valid():
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
-            user = authenticate(email=email, password=password)
+            # Use 'username' keyword for the email field as per USERNAME_FIELD
+            user = authenticate(username=email, password=password)
             
             if user is not None:
                 refresh = RefreshToken.for_user(user)

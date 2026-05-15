@@ -45,7 +45,8 @@ def login_view(request):
             # Find user
             try:
                 user_obj = User.objects.get(Q(email=username_or_email) | Q(username=username_or_email))
-                user = authenticate(request, email=user_obj.email, password=password)
+                # Standard authenticate expects 'username' keyword even if it's an email
+                user = authenticate(request, username=user_obj.email, password=password)
             except User.DoesNotExist:
                 user = None
 
